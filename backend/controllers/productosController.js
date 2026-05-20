@@ -3,10 +3,10 @@ const db = require('../config/db');
 // Crear producto
 exports.crearProducto = async (req, res) => {
     try {
-        const { nombre, descripcion, precio, imagen, stock } = req.body;
+        const { nombre, descripcion, precio, imagen, stock, categoria_id } = req.body;
         const [result] = await db.execute(
-            'INSERT INTO productos (nombre, descripcion, precio, imagen, stock) VALUES (?, ?, ?, ?, ?)',
-            [nombre, descripcion, precio, imagen, stock]
+            'INSERT INTO productos (nombre, descripcion, precio, imagen, stock, categoria_id) VALUES (?, ?, ?, ?, ?, ?)',
+            [nombre, descripcion, precio, imagen, stock, categoria_id || null]
         );
         res.status(201).json({ id: result.insertId, message: 'Producto creado exitosamente' });
     } catch (error) {
@@ -14,20 +14,30 @@ exports.crearProducto = async (req, res) => {
     }
 };
 
-// Listar todos los productos
+// Listar todos los productos (con info de categoría)
 exports.listarProductos = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM productos ORDER BY id DESC');
+        const [rows] = await db.execute(`
+            SELECT p.*, c.nombre as categoria_nombre 
+            FROM productos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            ORDER BY p.id DESC
+        `);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Obtener un producto por ID
+// Obtener un producto por ID (con info de categoría)
 exports.obtenerProducto = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM productos WHERE id = ?', [req.params.id]);
+        const [rows] = await db.execute(`
+            SELECT p.*, c.nombre as categoria_nombre 
+            FROM productos p 
+            LEFT JOIN categorias c ON p.categoria_id = c.id 
+            WHERE p.id = ?
+        `, [req.params.id]);
         if (rows.length === 0) return res.status(404).json({ message: 'Producto no encontrado' });
         res.json(rows[0]);
     } catch (error) {
@@ -38,10 +48,10 @@ exports.obtenerProducto = async (req, res) => {
 // Actualizar producto
 exports.actualizarProducto = async (req, res) => {
     try {
-        const { nombre, descripcion, precio, imagen, stock } = req.body;
+        const { nombre, descripcion, precio, imagen, stock, categoria_id } = req.body;
         const [result] = await db.execute(
-            'UPDATE productos SET nombre = ?, descripcion = ?, precio = ?, imagen = ?, stock = ? WHERE id = ?',
-            [nombre, descripcion, precio, imagen, stock, req.params.id]
+            'UPDATE productos SET nombre = ?, descripcion = ?, precio = ?, imagen = ?, stock = ?, categoria_id = ? WHERE id = ?',
+            [nombre, descripcion, precio, imagen, stock, categoria_id || null, req.params.id]
         );
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Producto no encontrado' });
         res.json({ message: 'Producto actualizado exitosamente' });

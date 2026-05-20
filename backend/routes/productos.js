@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const productosController = require('../controllers/productosController');
+const { verifyToken, isAdmin } = require('../middleware/auth');
 
-// CRUD Productos
+// Público: listar, obtener, whatsapp
 router.get('/', productosController.listarProductos);
 router.get('/:id', productosController.obtenerProducto);
-router.post('/', productosController.crearProducto);
-router.put('/:id', productosController.actualizarProducto);
-router.delete('/:id', productosController.eliminarProducto);
-
-// Generar link de WhatsApp para un producto
 router.get('/:id/whatsapp', productosController.generarLinkWhatsApp);
+
+// Admin: crear, actualizar, eliminar
+router.post('/', verifyToken, isAdmin, productosController.crearProducto);
+router.put('/:id', verifyToken, isAdmin, productosController.actualizarProducto);
+router.delete('/:id', verifyToken, isAdmin, productosController.eliminarProducto);
 
 module.exports = router;
